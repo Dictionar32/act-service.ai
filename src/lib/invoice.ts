@@ -5,7 +5,7 @@ export function generateInvoice(
   return `
 Halo ${customer} 😊
 
-Invoice Order
+Invoice Order Umayumcha
 
 Total: Rp${total}
 

@@ -1,26 +1,42 @@
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
-const serviceAccountAuth = new JWT({
+const auth = new JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+
+  key: process.env.GOOGLE_PRIVATE_KEY?.replace(
+    /\\n/g,
+    "\n"
+  ),
+
+  scopes: [
+    "https://www.googleapis.com/auth/spreadsheets",
+  ],
 });
 
 const doc = new GoogleSpreadsheet(
   process.env.GOOGLE_SHEET_ID!,
-  serviceAccountAuth
+  auth
 );
 
-export async function saveOrder(data: any) {
+export async function saveOrder(order: {
+  customer: string;
+  item: string;
+  qty: number;
+  total: number;
+  status: string;
+}) {
   await doc.loadInfo();
 
   const sheet = doc.sheetsByTitle["Orders"];
 
   await sheet.addRow({
-    customer: data.customer,
-    item: data.item,
-    total: data.total,
-    status: data.status,
+    customer: order.customer,
+    item: order.item,
+    qty: order.qty,
+    total: order.total,
+    status: order.status,
   });
+
+  console.log("Order saved!");
 }
