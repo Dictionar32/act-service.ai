@@ -1,18 +1,23 @@
 export function generateInvoice(
   customer: string,
+  item: string,
+  qty: number,
   total: number
-) {
-  return `
-Halo ${customer} 😊
+): string {
+  return `Halo ${customer} 😊
 
-Invoice Order Umayumcha
-
-Total: Rp${total}
+🧾 Invoice Order Umayumcha
+━━━━━━━━━━━━━━━━━━━━
+🧋 ${item} x${qty}
+💰 Total: Rp ${total.toLocaleString("id-ID")}
+━━━━━━━━━━━━━━━━━━━━
 
 Transfer ke:
-BCA 123456789
-a/n Umayumcha
+🏦 BCA  : 1234567890
+       a/n Umayumcha
 
-Terima kasih 🙏
-`;
+Setelah transfer, kirim bukti bayar ke sini ya kak!
+Pesanan diproses setelah pembayaran dikonfirmasi 🙏
+
+Terima kasih sudah order! ☕`;
 }

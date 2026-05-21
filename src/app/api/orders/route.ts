@@ -1,36 +1,50 @@
 import { askAI } from "@/lib/ai";
 import { saveOrder } from "@/lib/sheets";
 import { generateInvoice } from "@/lib/invoice";
+import { trackAnalytics } from "@/lib/analytics";
+import { parseOrder } from "@/lib/parser";
+import { sendDM } from "@/lib/instagram";
 
 export async function POST(req: Request) {
   const body = await req.json();
+  const { message, senderId, customerName = "Kak" } = body;
 
-  const message = body.message;
+  if (!message) {
+    return Response.json({ error: "message required" }, { status: 400 });
+  }
 
-  const aiReply = await askAI(message);
+  const parsed = parseOrder(message);
+  const isOrder = parsed !== null;
 
-  const isOrder =
-    message.toLowerCase().includes("order");
+  // Track analytics (tiap pesan masuk dihitung)
+  await trackAnalytics({ isOrder, revenue: parsed?.total ?? 0 });
 
   if (isOrder) {
+    // Simpan order ke Google Sheets
     await saveOrder({
-      customer: "Budi",
-      item: "Thai Tea",
-      total: 40000,
+      customer: customerName,
+      item: parsed!.item,
+      qty: parsed!.qty,
+      total: parsed!.total,
       status: "PENDING",
     });
 
-    const invoice = generateInvoice(
-      "Budi",
-      40000
-    );
+    // Generate & kirim invoice
+    const invoice = generateInvoice(customerName, parsed!.item, parsed!.qty, parsed!.total);
 
-    return Response.json({
-      reply: invoice,
-    });
+    if (senderId) {
+      await sendDM(senderId, invoice);
+    }
+
+    return Response.json({ reply: invoice, isOrder: true });
   }
 
-  return Response.json({
-    reply: aiReply,
-  });
+  // Bukan order → AI reply biasa
+  const reply = await askAI(message);
+
+  if (senderId) {
+    await sendDM(senderId, reply);
+  }
+
+  return Response.json({ reply, isOrder: false });
 }

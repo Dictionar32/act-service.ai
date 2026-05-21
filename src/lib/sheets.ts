@@ -3,21 +3,11 @@ import { JWT } from "google-auth-library";
 
 const auth = new JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(
-    /\\n/g,
-    "\n"
-  ),
-
-  scopes: [
-    "https://www.googleapis.com/auth/spreadsheets",
-  ],
+  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-const doc = new GoogleSpreadsheet(
-  process.env.GOOGLE_SHEET_ID!,
-  auth
-);
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID!, auth);
 
 export async function saveOrder(order: {
   customer: string;
@@ -27,16 +17,13 @@ export async function saveOrder(order: {
   status: string;
 }) {
   await doc.loadInfo();
-
   const sheet = doc.sheetsByTitle["Orders"];
-
   await sheet.addRow({
+    date: new Date().toISOString().split("T")[0],
     customer: order.customer,
     item: order.item,
     qty: order.qty,
     total: order.total,
     status: order.status,
   });
-
-  console.log("Order saved!");
 }

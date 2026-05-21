@@ -1,86 +1,34 @@
-import { groq } from "@ai-sdk/groq";
+import { generateText } from "ai";
+import { createGroq } from "@ai-sdk/groq";
 
-import { streamText } from "ai";
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-import { saveOrder } from "./sheets";
+const SYSTEM_PROMPT = `Kamu adalah customer service Umayumcha, toko bubble tea.
+Jawab dengan ramah dan singkat dalam bahasa Indonesia. Maksimal 3 kalimat.
 
-import { generateInvoice } from "./invoice";
+Sebelum menjawab, tanyakan dulu: "Kaka sudah pernah kesini sebelumnya?"
 
-import { trackAnalytics } from "./analytics";
+Menu dan harga:
+- Thai Tea: Rp 15.000
+- Dimsum: Rp 18.000
+- Brown Sugar Boba: Rp 25.000
+- Taro Milk Tea: Rp 23.000
+- Matcha Latte: Rp 24.000
+- Mango Yakult: Rp 22.000
 
-import { parseOrder } from "./parser";
+Jika customer bertanya tentang menu, sebutkan menu dan harganya.
+Jika customer mau order, konfirmasi pesanannya dengan ramah.`;
 
-async function main() {
-  const customerMessage =
-    "aku order 2 thai tea";
-
-  // parse customer message
-  const parsedOrder =
-    parseOrder(customerMessage);
-
-  if (!parsedOrder) {
-    console.log("Order tidak ditemukan");
-
-    return;
-  }
-
-  // create order object
-  const order = {
-    customer: "Budi",
-
-    item: parsedOrder.item,
-
-    qty: parsedOrder.qty,
-
-    total: parsedOrder.total,
-
-    status: "PENDING",
-  };
-
-  // AI response
-  const result = await streamText({
+export async function askAI(message: string): Promise<string> {
+  const { text } = await generateText({
     model: groq("llama-3.3-70b-versatile"),
-
-    system: `
-Kamu adalah customer service Umayumcha.
-
-Menu:
-- Thai Tea 15k
-- Dimsum 18k
-`,
-    messages: [
-      {
-        role: "user",
-        content: customerMessage,
-      },
-    ],
+    system: SYSTEM_PROMPT,
+    prompt: message,
   });
-
-  // stream response
-  for await (const textPart of result.textStream) {
-    process.stdout.write(textPart);
-  }
-
-  console.log();
-
-  // save order
-  await saveOrder(order);
-
-  console.log("Order saved!");
-
-  // analytics
-  await trackAnalytics({
-    isOrder: true,
-    revenue: order.total,
-  });
-
-  // invoice
-  const invoice = generateInvoice(
-    order.customer,
-    order.total
-  );
-
-  console.log(invoice);
+  return text;
 }
 
-main();
+  const reply = await askAI("Hai, aku mau pesan Thai Tea dan Dimsum. Harganya berapa ya?");
+  console.log("Reply:", reply);
