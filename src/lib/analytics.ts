@@ -38,7 +38,7 @@ export async function trackAnalytics({
   const rows = await sheet.getRows();
 
   const todayRow = rows.find(
-    (row: any) => row.get("date") === today
+    (row) => row.get("date") === today
   );
 
   // kalau hari ini belum ada row

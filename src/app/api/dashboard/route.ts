@@ -54,10 +54,11 @@ export async function GET() {
       analytics, // Sorted chronologically (original order in sheet is usually chronological)
       orders: sortedOrders,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[dashboard-api] Error fetching dashboard data:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch dashboard data";
     return Response.json(
-      { success: false, error: error.message || "Failed to fetch dashboard data" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

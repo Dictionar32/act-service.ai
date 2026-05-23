@@ -29,10 +29,11 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[update-status-api] Error updating order status:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to update order status";
     return Response.json(
-      { success: false, error: error.message || "Failed to update order status" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
