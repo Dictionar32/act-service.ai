@@ -15,8 +15,17 @@ export async function GET() {
   ].join(",");
 
   const res = await fetch(
-    `https://graph.facebook.com/v25.0/${PAGE_ID}/subscribed_apps?access_token=${PAGE_TOKEN}&subscribed_fields=${fields}`,
-    { method: "POST" }
+    `https://graph.facebook.com/v25.0/${PAGE_ID}/subscribed_apps`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        access_token: PAGE_TOKEN,
+        subscribed_fields: fields,
+      }).toString(),
+    }
   );
 
   const data = await res.json();

@@ -89,3 +89,15 @@ export async function trackAnalytics({
 
   console.log("Analytics updated!");
 }
+
+export async function getAnalyticsData() {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["Analytics"];
+  const rows = await sheet.getRows();
+  return rows.map((row) => ({
+    date: row.get("date"),
+    total_chat: Number(row.get("total_chat") ?? 0),
+    total_order: Number(row.get("total_order") ?? 0),
+    revenue: Number(row.get("revenue") ?? 0),
+  }));
+}

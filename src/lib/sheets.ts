@@ -32,3 +32,31 @@ export async function saveOrder(order: {
     });
   }
 }
+
+export async function getOrders() {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["Orders"];
+  const rows = await sheet.getRows();
+  return rows.map((row) => ({
+    rowNumber: row.rowNumber,
+    date: row.get("date"),
+    customer: row.get("customer"),
+    item: row.get("item"),
+    qty: Number(row.get("qty") ?? 0),
+    total: Number(row.get("total") ?? 0),
+    status: row.get("status") || "PENDING",
+  }));
+}
+
+export async function updateOrderStatus(rowNumber: number, status: string): Promise<boolean> {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["Orders"];
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => r.rowNumber === rowNumber);
+  if (row) {
+    row.set("status", status);
+    await row.save();
+    return true;
+  }
+  return false;
+}
