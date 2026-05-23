@@ -5,6 +5,18 @@ import { trackAnalytics } from "@/lib/analytics";
 import { parseOrder } from "@/lib/parser";
 import { sendDM } from "@/lib/instagram";
 
+async function sendDMIfPossible(senderId: string | undefined, text: string): Promise<void> {
+  if (!senderId) {
+    return;
+  }
+
+  try {
+    await sendDM(senderId, text);
+  } catch (error) {
+    console.error("[orders] Failed to send Instagram DM:", error);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -29,18 +41,14 @@ export async function POST(req: Request) {
 
       const invoice = generateInvoice(customerName, parsed!.items, parsed!.total);
 
-      if (senderId) {
-        await sendDM(senderId, invoice);
-      }
+      await sendDMIfPossible(senderId, invoice);
 
       return Response.json({ reply: invoice, isOrder: true });
     }
 
     const reply = await askAI(message);
 
-    if (senderId) {
-      await sendDM(senderId, reply);
-    }
+    await sendDMIfPossible(senderId, reply);
 
     return Response.json({ reply, isOrder: false });
   } catch (err) {
