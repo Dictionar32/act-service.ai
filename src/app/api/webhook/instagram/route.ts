@@ -165,7 +165,7 @@ export async function POST(req: Request) {
     }
   }
 
-  Promise.all(tasks).catch((err) =>
+  await Promise.all(tasks).catch((err) =>
     console.error("[webhook] Unexpected error:", err)
   );
 
