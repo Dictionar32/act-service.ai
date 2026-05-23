@@ -1,7 +1,9 @@
-const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
-const PAGE_ID = process.env.IG_PAGE_ID;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
+  const PAGE_ID = process.env.IG_PAGE_ID;
+
   if (!PAGE_TOKEN || !PAGE_ID) {
     return Response.json({ error: "IG_PAGE_TOKEN atau IG_PAGE_ID belum diset" }, { status: 400 });
   }

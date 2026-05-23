@@ -45,3 +45,25 @@ export async function replyComment(commentId: string, text: string): Promise<voi
     throw new Error(`Instagram comment reply failed: ${errMsg}`);
   }
 }
+
+export async function getUserProfile(userId: string): Promise<{ name: string; username: string }> {
+  if (!PAGE_TOKEN) {
+    return { name: "Kak", username: "" };
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}/${userId}?fields=name,username&access_token=${PAGE_TOKEN}`);
+    if (!res.ok) {
+      console.warn(`[instagram] Gagal fetch profil user ${userId}: ${res.statusText}`);
+      return { name: "Kak", username: "" };
+    }
+    const data = await res.json();
+    return {
+      name: data.name || data.username || "Kak",
+      username: data.username || "",
+    };
+  } catch (error) {
+    console.error(`[instagram] Error fetch profil user ${userId}:`, error);
+    return { name: "Kak", username: "" };
+  }
+}

@@ -60,3 +60,32 @@ export async function updateOrderStatus(rowNumber: number, status: string): Prom
   }
   return false;
 }
+
+export async function saveCustomer(customer: {
+  instagram_id: string;
+  name: string;
+  status: string;
+}) {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["Customers"];
+  if (!sheet) {
+    console.warn("[sheets] Tab 'Customers' tidak ditemukan di Google Sheets!");
+    return;
+  }
+
+  const rows = await sheet.getRows();
+  const exists = rows.some((row) => row.get("instagram_id") === customer.instagram_id);
+
+  if (!exists) {
+    const created_at = new Date().toISOString().split("T")[0];
+    await sheet.addRow({
+      instagram_id: customer.instagram_id,
+      name: customer.name,
+      status: customer.status,
+      created_at,
+    });
+    console.log(`[sheets] Customer baru disimpan: ${customer.name} (${customer.instagram_id})`);
+  } else {
+    console.log(`[sheets] Customer ${customer.name} sudah terdaftar.`);
+  }
+}
