@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 interface SummaryData {
   totalRevenue: number;
@@ -77,6 +76,31 @@ const MOCK_DASHBOARD_DATA: DashboardPayload = {
   ]
 };
 
+interface ChartPoint {
+  x: number;
+  y: number;
+  value: number;
+  date: string;
+}
+
+interface VolumePoint {
+  date: string;
+  chat: {
+    x: number;
+    y: number;
+    height: number;
+    width: number;
+    value: number;
+  };
+  order: {
+    x: number;
+    y: number;
+    height: number;
+    width: number;
+    value: number;
+  };
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -96,10 +120,12 @@ export default function Dashboard() {
   const [simulatorIsOrder, setSimulatorIsOrder] = useState<boolean | null>(null);
 
   // Chart Tooltips
-  const [hoveredRevenuePoint, setHoveredRevenuePoint] = useState<any>(null);
-  const [hoveredVolumePoint, setHoveredVolumePoint] = useState<any>(null);
+  const [hoveredRevenuePoint, setHoveredRevenuePoint] = useState<ChartPoint | null>(null);
+  const [hoveredVolumePoint, setHoveredVolumePoint] = useState<VolumePoint | null>(null);
 
-  const fetchData = async (forceDemo = false) => {
+  const fetchData = useCallback(async (forceDemo = false) => {
+    // Defer state updates to avoid synchronous setState inside useEffect
+    await Promise.resolve();
     setLoading(true);
     setError(null);
     if (forceDemo) {
@@ -118,19 +144,23 @@ export default function Dashboard() {
       } else {
         throw new Error(json.error || "Gagal mengambil data dari Google Sheets.");
       }
-    } catch (err: any) {
-      console.warn("Menggunakan Demo Mode karena Google Sheets API gagal:", err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn("Menggunakan Demo Mode karena Google Sheets API gagal:", errMsg);
       setData(MOCK_DASHBOARD_DATA);
       setIsDemoMode(true);
       setError("Gagal terhubung ke Google Sheets API. Mengaktifkan Demo Mode.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchData]);
 
   // Filter & calculate values based on Timeframe and Status Filter
   const filteredAnalytics = useMemo(() => {
@@ -142,7 +172,7 @@ export default function Dashboard() {
       analyticsData = analyticsData.slice(-30);
     }
     return analyticsData;
-  }, [data?.analytics, timeframe]);
+  }, [data, timeframe]);
 
   const summary = useMemo(() => {
     if (!data) return null;
@@ -178,7 +208,7 @@ export default function Dashboard() {
       const matchesStatus = statusFilter === "ALL" || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [data?.orders, searchQuery, statusFilter]);
+  }, [data, searchQuery, statusFilter]);
 
   const handleUpdateStatus = async (rowNumber: number, newStatus: string) => {
     if (isDemoMode) {
@@ -211,8 +241,9 @@ export default function Dashboard() {
       } else {
         alert("Gagal memperbarui status: " + json.error);
       }
-    } catch (err: any) {
-      alert("Gagal memperbarui status: " + err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      alert("Gagal memperbarui status: " + errMsg);
     } finally {
       setUpdatingRowNumber(null);
     }
@@ -331,8 +362,9 @@ export default function Dashboard() {
       } else {
         setSimulatorReply("Error: " + (json.error || "Gagal mengirim pesan"));
       }
-    } catch (err: any) {
-      setSimulatorReply("Error: " + err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setSimulatorReply("Error: " + errMsg);
     } finally {
       setSimulatorLoading(false);
     }
@@ -416,11 +448,11 @@ export default function Dashboard() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-amber-500/20">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-amber-500/20">
             🧋
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-200 to-orange-400 leading-none">
+            <h1 className="text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-amber-200 to-orange-400 leading-none">
               Umayumcha AI Hub
             </h1>
             <p className="text-xs text-zinc-500 font-medium mt-0.5">Admin & Sales Analytics Dashboard</p>
@@ -443,7 +475,7 @@ export default function Dashboard() {
           {isDemoMode && (
             <button
               onClick={() => fetchData(false)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white transition-all cursor-pointer"
             >
               Connect Sheets
             </button>
@@ -468,7 +500,7 @@ export default function Dashboard() {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Revenue */}
           <div className="bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all rounded-xl p-5 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-amber-500/10 to-transparent rounded-full pointer-events-none"></div>
             <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold tracking-wide uppercase">
               <span>Pendapatan</span>
               <span className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-amber-400">💰</span>
@@ -486,7 +518,7 @@ export default function Dashboard() {
 
           {/* Card 2: Total Orders */}
           <div className="bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all rounded-xl p-5 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-emerald-500/10 to-transparent rounded-full pointer-events-none"></div>
             <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold tracking-wide uppercase">
               <span>Total Pesanan</span>
               <span className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-emerald-400">🛍️</span>
@@ -502,7 +534,7 @@ export default function Dashboard() {
 
           {/* Card 3: Chats Volume */}
           <div className="bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all rounded-xl p-5 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/10 to-transparent pointer-events-none rounded-full"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-blue-500/10 to-transparent pointer-events-none rounded-full"></div>
             <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold tracking-wide uppercase">
               <span>Volume Percakapan</span>
               <span className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-blue-400">💬</span>
@@ -518,7 +550,7 @@ export default function Dashboard() {
 
           {/* Card 4: Conversion Rate */}
           <div className="bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all rounded-xl p-5 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-500/10 to-transparent pointer-events-none rounded-full"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-indigo-500/10 to-transparent pointer-events-none rounded-full"></div>
             <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold tracking-wide uppercase">
               <span>Tingkat Konversi</span>
               <span className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-indigo-400">📈</span>
@@ -536,7 +568,7 @@ export default function Dashboard() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Charts Column (Left, 8 cols) */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-5 shadow-xl flex flex-col h-[280px] relative">
+            <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-5 shadow-xl flex flex-col h-70 relative">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-sm font-semibold text-zinc-100">Tren Pendapatan Harian (IDR)</h2>
@@ -688,7 +720,7 @@ export default function Dashboard() {
             </div>
 
             {/* Chat vs Orders Volume Chart */}
-            <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-5 shadow-xl flex flex-col h-[280px] relative">
+            <div className="bg-zinc-900 border border-zinc-850 rounded-xl p-5 shadow-xl flex flex-col h-70 relative">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-sm font-semibold text-zinc-100">Rasio Chat & Pesanan Masuk</h2>
@@ -837,12 +869,12 @@ export default function Dashboard() {
                 value={simulatorMessage}
                 onChange={(e) => setSimulatorMessage(e.target.value)}
                 placeholder='Contoh: "Halo, saya mau beli 2 boba brown sugar dan dimsum 1 ya kak"'
-                className="w-full min-h-[90px] text-xs p-3 rounded-lg bg-zinc-950 border border-zinc-805 text-zinc-200 placeholder-zinc-650 focus:outline-none focus:border-amber-600 transition-all font-medium resize-none leading-relaxed"
+                className="w-full min-h-22.5 text-xs p-3 rounded-lg bg-zinc-950 border border-zinc-805 text-zinc-200 placeholder-zinc-650 focus:outline-none focus:border-amber-600 transition-all font-medium resize-none leading-relaxed"
               />
               <button
                 type="submit"
                 disabled={simulatorLoading || !simulatorMessage.trim()}
-                className="w-full py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-lg text-xs font-semibold shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                className="w-full py-2 bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-lg text-xs font-semibold shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
                 {simulatorLoading ? (
                   <>
@@ -855,7 +887,7 @@ export default function Dashboard() {
               </button>
             </form>
 
-            <div className="mt-4 flex-1 flex flex-col bg-zinc-950 rounded-lg border border-zinc-850 p-4 min-h-[170px] overflow-y-auto">
+            <div className="mt-4 flex-1 flex flex-col bg-zinc-950 rounded-lg border border-zinc-850 p-4 min-h-42.5 overflow-y-auto">
               <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider block mb-2">
                 Respon AI / Invoice
               </span>

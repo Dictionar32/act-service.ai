@@ -40,3 +40,7 @@ export async function askAI(message: string): Promise<string> {
   });
   return text;
 }
+
+askAI("Halo, saya mau tanya tentang paket yang kalian punya").then((res) => {
+  console.log("AI jawab:", res);
+});
