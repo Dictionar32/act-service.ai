@@ -1,5 +1,6 @@
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
+import { OrderItem } from "./parser";
 
 const auth = new JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -11,19 +12,23 @@ const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID!, auth);
 
 export async function saveOrder(order: {
   customer: string;
-  item: string;
-  qty: number;
+  items: OrderItem[];
   total: number;
   status: string;
 }) {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["Orders"];
-  await sheet.addRow({
-    date: new Date().toISOString().split("T")[0],
-    customer: order.customer,
-    item: order.item,
-    qty: order.qty,
-    total: order.total,
-    status: order.status,
-  });
+  const date = new Date().toISOString().split("T")[0];
+
+  // Simpan satu row per item
+  for (const i of order.items) {
+    await sheet.addRow({
+      date,
+      customer: order.customer,
+      item: i.item,
+      qty: i.qty,
+      total: i.subtotal,
+      status: order.status,
+    });
+  }
 }

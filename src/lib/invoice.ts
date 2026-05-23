@@ -1,14 +1,20 @@
+import { OrderItem } from "./parser";
+
 export function generateInvoice(
   customer: string,
-  item: string,
-  qty: number,
+  items: OrderItem[],
   total: number
 ): string {
+  const itemLines = items
+    .map((i) => `🧋 ${i.item} x${i.qty}  →  Rp ${i.subtotal.toLocaleString("id-ID")}`)
+    .join("\n");
+
   return `Halo ${customer} 😊
 
 🧾 Invoice Order Umayumcha
 ━━━━━━━━━━━━━━━━━━━━
-🧋 ${item} x${qty}
+${itemLines}
+━━━━━━━━━━━━━━━━━━━━
 💰 Total: Rp ${total.toLocaleString("id-ID")}
 ━━━━━━━━━━━━━━━━━━━━
 

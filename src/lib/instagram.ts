@@ -1,14 +1,14 @@
 const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
-const API_URL = "https://graph.facebook.com/v19.0/me/messages";
+const BASE_URL = "https://graph.facebook.com/v25.0";
 
-export async function sendDM(recipientId: string, text: string) {
+export async function sendDM(recipientId: string, text: string): Promise<void> {
   if (!PAGE_TOKEN) {
     console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip kirim DM");
     console.log("[instagram] Pesan yang harusnya terkirim:", text);
     return;
   }
 
-  const res = await fetch(`${API_URL}?access_token=${PAGE_TOKEN}`, {
+  const res = await fetch(`${BASE_URL}/me/messages?access_token=${PAGE_TOKEN}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -20,7 +20,28 @@ export async function sendDM(recipientId: string, text: string) {
 
   const data = await res.json();
   if (!res.ok) {
-    console.error("[instagram] Gagal kirim DM:", data);
+    const errMsg = data?.error?.message ?? "Unknown error";
+    console.error(`[instagram] Gagal kirim DM ke ${recipientId}: ${errMsg}`);
+    throw new Error(`Instagram DM failed: ${errMsg}`);
   }
-  return data;
+}
+
+export async function replyComment(commentId: string, text: string): Promise<void> {
+  if (!PAGE_TOKEN) {
+    console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip reply komentar");
+    return;
+  }
+
+  const res = await fetch(`${BASE_URL}/${commentId}/replies?access_token=${PAGE_TOKEN}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    const errMsg = data?.error?.message ?? "Unknown error";
+    console.error(`[instagram] Gagal reply komentar ${commentId}: ${errMsg}`);
+    throw new Error(`Instagram comment reply failed: ${errMsg}`);
+  }
 }

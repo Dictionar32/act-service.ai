@@ -29,6 +29,3 @@ export async function askAI(message: string): Promise<string> {
   });
   return text;
 }
-
-  const reply = await askAI("Hai, aku mau pesan Thai Tea dan Dimsum. Harganya berapa ya?");
-  console.log("Reply:", reply);
