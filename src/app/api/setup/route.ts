@@ -9,9 +9,9 @@ export async function GET() {
   const fields = [
     "messages",
     "messaging_postbacks",
-    "messaging_referral",
-    "messaging_seen",
-    "comments",
+    "messaging_referrals",
+    "message_reads",
+    "feed",
   ].join(",");
 
   const res = await fetch(
