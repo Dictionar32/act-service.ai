@@ -70,6 +70,7 @@ async function handleComment(senderId: string, commentId: string, text: string) 
   } else {
     // Pertanyaan biasa — reply publik via AI (singkat)
     const reply = await askAI(
+      senderId,
       `Balas komentar Instagram ini dengan singkat (1 kalimat), ramah, bahasa Indonesia:\n"${text}"`
     );
     await replyComment(commentId, reply);
@@ -103,7 +104,7 @@ async function handlePostback(senderId: string, title: string, payload: string) 
     return;
   }
 
-  const reply = await askAI(`User menekan tombol: ${title}`);
+  const reply = await askAI(senderId, `User menekan tombol: ${title}`);
   await sendDM(senderId, reply);
 }
 
@@ -128,7 +129,7 @@ async function handleMessage(senderId: string, text: string) {
     const invoice = generateInvoice(customerName, parsed!.items, parsed!.total);
     await sendDM(senderId, invoice);
   } else {
-    const reply = await askAI(text);
+    const reply = await askAI(senderId, text);
     await sendDM(senderId, reply);
   }
 }

@@ -63,7 +63,8 @@ export async function POST(req: Request) {
       return Response.json({ reply: invoice, isOrder: true });
     }
 
-    const reply = await askAI(message);
+    const aiSenderId = typeof senderId === "string" && senderId.trim() ? senderId.trim() : "web-guest";
+    const reply = await askAI(aiSenderId, message);
 
     await sendDMIfPossible(senderId, reply);
 
