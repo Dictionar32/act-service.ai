@@ -2,7 +2,7 @@ import { askAI } from "@/lib/ai";
 import { saveOrder } from "@/lib/sheets";
 import { generateInvoice } from "@/lib/invoice";
 import { trackAnalytics } from "@/lib/analytics";
-import { parseOrder } from "@/lib/parser";
+import { hasOrderIntent, parseOrder } from "@/lib/parser";
 import { sendDM } from "@/lib/instagram";
 
 function isValidInstagramRecipientId(senderId: string): boolean {
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     const parsed = parseOrder(message);
-    const isOrder = parsed !== null;
+    const isOrder = hasOrderIntent(message) && parsed !== null;
 
     await trackAnalytics({ isOrder, revenue: parsed?.total ?? 0 });
 

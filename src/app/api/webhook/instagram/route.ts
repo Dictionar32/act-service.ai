@@ -1,6 +1,6 @@
 import { sendDM, replyComment, getUserProfile } from "@/lib/instagram";
 import { askAI } from "@/lib/ai";
-import { parseOrder } from "@/lib/parser";
+import { hasOrderIntent, parseOrder } from "@/lib/parser";
 import { saveOrder, saveCustomer } from "@/lib/sheets";
 import { generateInvoice } from "@/lib/invoice";
 import { trackAnalytics } from "@/lib/analytics";
@@ -114,7 +114,7 @@ async function handleMessage(senderId: string, text: string) {
   const customerName = profile.name || "Kak";
 
   const parsed = parseOrder(text);
-  const isOrder = parsed !== null;
+  const isOrder = hasOrderIntent(text) && parsed !== null;
 
   await trackAnalytics({ isOrder, revenue: parsed?.total ?? 0 });
 

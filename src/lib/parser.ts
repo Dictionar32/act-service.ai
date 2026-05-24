@@ -19,6 +19,13 @@ export interface ParsedOrder {
   total: number;
 }
 
+const ORDER_KEYWORDS = ["pesan", "order", "beli", "mau", "jadi pesan"];
+
+export function hasOrderIntent(message: string): boolean {
+  const lower = message.toLowerCase();
+  return ORDER_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
 // Extract qty before or after a menu item name
 function extractQty(segment: string): number {
   const match = segment.match(/\b(\d+)\b/);
