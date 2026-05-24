@@ -1,40 +1,70 @@
 const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
+const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
-export async function sendDM(recipientId: string, text: string): Promise<void> {
+function createInstagramHeaders(): Record<string, string> {
   if (!PAGE_TOKEN) {
-    console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip kirim DM");
-    console.log("[instagram] Pesan yang harusnya terkirim:", text);
-    return;
+    throw new Error("Missing IG_PAGE_TOKEN");
   }
 
-  const res = await fetch(`${BASE_URL}/me/messages?access_token=${PAGE_TOKEN}`, {
+  return {
+    Authorization: `Bearer ${PAGE_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
+export async function sendDM(recipientId: string, text: string): Promise<unknown> {
+  if (!PAGE_TOKEN) {
+    console.error("[instagram] Missing IG_PAGE_TOKEN");
+    return {
+      skipped: true,
+      reason: "missing_token",
+    };
+  }
+
+  console.log("[instagram] function called");
+  console.log("[instagram] recipientId:", recipientId);
+  const messagingTarget = IG_USER_ID?.trim() ? IG_USER_ID.trim() : "me";
+  console.log("[instagram] target:", messagingTarget);
+
+  const payload = {
+    messaging_product: "instagram",
+
+    recipient: {
+      id: recipientId,
+    },
+
+    message: {
+      text,
+    },
+  };
+
+  console.log("[instagram] payload:", JSON.stringify(payload, null, 2));
+
+  const res = await fetch(`${BASE_URL}/${messagingTarget}/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      recipient: { id: recipientId },
-      message: { text },
-      messaging_type: "RESPONSE",
-    }),
+
+    headers: createInstagramHeaders(),
+
+    body: JSON.stringify(payload),
   });
 
-  const data = await res.json();
+  const raw = await res.text();
+
+  console.log("[instagram] STATUS:", res.status);
+  console.log("[instagram] RAW RESPONSE:", raw);
+
   if (!res.ok) {
-    const errMsg = data?.error?.message ?? "Unknown error";
-    console.error(`[instagram] Gagal kirim DM ke ${recipientId}: ${errMsg}`);
-    throw new Error(`Instagram DM failed: ${errMsg}`);
+    throw new Error(raw);
   }
+
+  return JSON.parse(raw);
 }
 
 export async function replyComment(commentId: string, text: string): Promise<void> {
-  if (!PAGE_TOKEN) {
-    console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip reply komentar");
-    return;
-  }
-
-  const res = await fetch(`${BASE_URL}/${commentId}/replies?access_token=${PAGE_TOKEN}`, {
+  const res = await fetch(`${BASE_URL}/${commentId}/replies`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: createInstagramHeaders(),
     body: JSON.stringify({ message: text }),
   });
 
@@ -52,7 +82,9 @@ export async function getUserProfile(userId: string): Promise<{ name: string; us
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/${userId}?fields=name,username&access_token=${PAGE_TOKEN}`);
+    const res = await fetch(`${BASE_URL}/${userId}?fields=name,username`, {
+      headers: createInstagramHeaders(),
+    });
     if (!res.ok) {
       console.warn(`[instagram] Gagal fetch profil user ${userId}: ${res.statusText}`);
       return { name: "Kak", username: "" };
