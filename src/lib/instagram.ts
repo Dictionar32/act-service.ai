@@ -22,22 +22,11 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
       reason: "missing_token",
     };
   }
-  const instagramUserId = IG_USER_ID?.trim();
-  if (!instagramUserId) {
-    console.warn("[instagram] missing IG_USER_ID");
-    return {
-      skipped: true,
-      reason: "missing_ig_user_id",
-    };
-  }
-
   console.log("[DM] recipient:", recipientId);
-  console.log("[DM] ig user:", instagramUserId);
+  console.log("[DM] ig user:", IG_USER_ID ?? "(not used for /me/messages)");
   console.log("[DM] token exists:", !!PAGE_TOKEN);
 
   const payload = {
-    messaging_product: "instagram",
-
     recipient: {
       id: recipientId,
     },
@@ -49,7 +38,7 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
 
   console.log("[instagram] payload:", JSON.stringify(payload, null, 2));
 
-  const res = await fetch(`${BASE_URL}/${instagramUserId}/messages`, {
+  const res = await fetch(`${BASE_URL}/me/messages`, {
     method: "POST",
 
     headers,
@@ -59,8 +48,8 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
 
   const raw = await res.text();
 
-  console.log("[instagram] STATUS:", res.status);
-  console.log("[instagram] RAW RESPONSE:", raw);
+  console.log("[instagram] status:", res.status);
+  console.log("[instagram] response:", raw);
 
   if (!res.ok) {
     throw new Error(raw);
