@@ -33,6 +33,10 @@ function hasAskedFirstVisit(history: Message[]) {
   );
 }
 
+function hasOrderPhrase(text: string): boolean {
+  return ["mau pesan", "pesan", "order", "beli"].some((k) => text.includes(k));
+}
+
 /**
  * Memory sederhana in-memory
  * key = senderId instagram
@@ -164,6 +168,42 @@ export async function askAI(senderId: string, message: string): Promise<string> 
     return duplicateReply;
   }
 
+  if (hasOrderPhrase(normalizedMessage) && !normalizedMessage.includes("atas nama")) {
+    const reply = "Baik Kak 😊 Mau pesan menu apa dan berapa jumlahnya ya kak?";
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
+
+  const menuWithQtyPattern =
+    /(thai tea|dimsum|brown sugar boba|taro milk tea|matcha latte|mango yakult)\s*\d+/i;
+  if (menuWithQtyPattern.test(normalizedMessage)) {
+    const match = normalizedMessage.match(menuWithQtyPattern);
+    const normalizedOrder = match ? match[0].replace(/\s+/g, " ").trim() : "pesanan Kak";
+    const reply = `Baik Kak 😊 Pesanan ${normalizedOrder} ya kak. Atas nama siapa pesanannya kak?`;
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
+
+  if (normalizedMessage.startsWith("atas nama ")) {
+    const customerName = message.replace(/^atas nama\s+/i, "").trim();
+    const safeName = customerName || "Kak";
+    const reply = `Baik Kak 😊 Nama pesanan sudah kami ubah menjadi ${safeName} ya kak.`;
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
+
   /**
    * Generate AI
    */
@@ -194,5 +234,10 @@ Jangan mengulangi jawaban ini lagi:
    */
   memoryStore.set(senderId, limitedHistory);
 
-  return text.trim();
+  let response = text.trim();
+  if (response.length > 1000) {
+    response = response.slice(0, 1000);
+  }
+  console.log("[AI RESPONSE]", response);
+  return response;
 }

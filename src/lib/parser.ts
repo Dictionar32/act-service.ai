@@ -26,6 +26,14 @@ export function hasOrderIntent(message: string): boolean {
   return ORDER_KEYWORDS.some((keyword) => lower.includes(keyword));
 }
 
+export function hasExplicitOrderQuantity(message: string): boolean {
+  return /\b\d+\b/.test(message);
+}
+
+export function shouldCreateInvoice(message: string, hasMenuItems: boolean): boolean {
+  return hasMenuItems && hasOrderIntent(message) && hasExplicitOrderQuantity(message);
+}
+
 // Extract qty before or after a menu item name
 function extractQty(segment: string): number {
   const match = segment.match(/\b(\d+)\b/);
