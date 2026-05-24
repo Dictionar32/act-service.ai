@@ -1,35 +1,60 @@
-export const dynamic = "force-dynamic";
+import { NextResponse } from "next/server";
+
+const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
+const IG_USER_ID = process.env.IG_USER_ID;
+
+async function fetchJSON(url: string) {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${PAGE_TOKEN}`,
+    },
+  });
+
+  const text = await res.text();
+
+  try {
+    return {
+      ok: res.ok,
+      status: res.status,
+      data: JSON.parse(text),
+    };
+  } catch {
+    return {
+      ok: res.ok,
+      status: res.status,
+      raw: text,
+    };
+  }
+}
 
 export async function GET() {
-  const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
-  const PAGE_ID = process.env.IG_PAGE_ID;
-
-  if (!PAGE_TOKEN || !PAGE_ID) {
-    return Response.json({ error: "IG_PAGE_TOKEN atau IG_PAGE_ID belum diset" }, { status: 400 });
-  }
-
-  const fields = [
-    "messages",
-    "messaging_postbacks",
-    "messaging_referrals",
-    "message_reads",
-    "feed",
-  ].join(",");
-
-  const res = await fetch(
-    `https://graph.facebook.com/v25.0/${PAGE_ID}/subscribed_apps`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        access_token: PAGE_TOKEN,
-        subscribed_fields: fields,
-      }).toString(),
+  try {
+    if (!PAGE_TOKEN) {
+      return NextResponse.json({
+        ok: false,
+        error: "IG_PAGE_TOKEN missing",
+      });
     }
-  );
 
-  const data = await res.json();
-  return Response.json(data);
+    const me = await fetchJSON("https://graph.facebook.com/v25.0/me?fields=id,name");
+
+    const ig = IG_USER_ID
+      ? await fetchJSON(`https://graph.facebook.com/v25.0/${IG_USER_ID}?fields=id,username`)
+      : null;
+
+    return NextResponse.json({
+      ok: true,
+      env: {
+        hasToken: !!PAGE_TOKEN,
+        hasIgUserId: !!IG_USER_ID,
+      },
+      me,
+      instagram: ig,
+    });
+  } catch (err) {
+    return NextResponse.json({
+      ok: false,
+      error: err instanceof Error ? err.message : "unknown error",
+    });
+  }
 }
