@@ -5,6 +5,35 @@ import { trackAnalytics } from "@/lib/analytics";
 import { parseOrder } from "@/lib/parser";
 import { sendDM } from "@/lib/instagram";
 
+function isValidInstagramRecipientId(senderId: string): boolean {
+  return /^\d{10,30}$/.test(senderId);
+}
+
+function normalizeSenderId(senderId: unknown): string {
+  return String(senderId ?? "").trim();
+}
+
+async function sendDMIfPossible(senderId: unknown, text: string): Promise<void> {
+  const normalizedSenderId = normalizeSenderId(senderId);
+  console.log("[orders] raw senderId:", senderId);
+  console.log("[orders] normalized senderId:", normalizedSenderId);
+  console.log("[orders] isValid:", isValidInstagramRecipientId(normalizedSenderId));
+
+  if (!isValidInstagramRecipientId(normalizedSenderId)) {
+    if (senderId) {
+      console.warn(`[orders] Skip Instagram DM because senderId is invalid: ${String(senderId)}`);
+    }
+    return;
+  }
+
+  try {
+    console.log("[orders] before sendDM");
+    await sendDM(normalizedSenderId, text);
+  } catch (error) {
+    console.warn("[orders] Failed to send Instagram DM:", error);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -29,18 +58,14 @@ export async function POST(req: Request) {
 
       const invoice = generateInvoice(customerName, parsed!.items, parsed!.total);
 
-      if (senderId) {
-        await sendDM(senderId, invoice);
-      }
+      await sendDMIfPossible(senderId, invoice);
 
       return Response.json({ reply: invoice, isOrder: true });
     }
 
     const reply = await askAI(message);
 
-    if (senderId) {
-      await sendDM(senderId, reply);
-    }
+    await sendDMIfPossible(senderId, reply);
 
     return Response.json({ reply, isOrder: false });
   } catch (err) {
