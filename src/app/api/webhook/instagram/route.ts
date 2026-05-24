@@ -1,11 +1,20 @@
 import { sendDM, replyComment, getUserProfile } from "@/lib/instagram";
 import { askAI } from "@/lib/ai";
-import { parseOrder } from "@/lib/parser";
+import { parseOrder, shouldCreateInvoice } from "@/lib/parser";
 import { saveOrder, saveCustomer } from "@/lib/sheets";
 import { generateInvoice } from "@/lib/invoice";
 import { trackAnalytics } from "@/lib/analytics";
 
 const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
+
+type CheckoutSession = {
+  selectedItems?: { name: string; qty: number }[];
+  customerName?: string;
+  waitingForName?: boolean;
+  waitingForPayment?: boolean;
+};
+
+const checkoutSessions = new Map<string, CheckoutSession>();
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -70,6 +79,7 @@ async function handleComment(senderId: string, commentId: string, text: string) 
   } else {
     // Pertanyaan biasa — reply publik via AI (singkat)
     const reply = await askAI(
+      senderId,
       `Balas komentar Instagram ini dengan singkat (1 kalimat), ramah, bahasa Indonesia:\n"${text}"`
     );
     await replyComment(commentId, reply);
@@ -103,7 +113,7 @@ async function handlePostback(senderId: string, title: string, payload: string) 
     return;
   }
 
-  const reply = await askAI(`User menekan tombol: ${title}`);
+  const reply = await askAI(senderId, `User menekan tombol: ${title}`);
   await sendDM(senderId, reply);
 }
 
@@ -111,31 +121,74 @@ async function handleMessage(senderId: string, text: string) {
   // Registrasi customer baru dan dapatkan namanya
   const profile = await registerCustomerIfNeeded(senderId);
   const customerName = profile.name || "Kak";
+  const normalizedText = text.toLowerCase().trim();
+  const session = checkoutSessions.get(senderId) ?? {};
+
+  if (session.waitingForName && normalizedText.startsWith("atas nama")) {
+    const parsedName = text.replace(/^atas nama\s+/i, "").trim();
+    const resolvedName = parsedName || customerName;
+    session.customerName = resolvedName;
+    session.waitingForName = false;
+    session.waitingForPayment = true;
+    checkoutSessions.set(senderId, session);
+
+    if (session.selectedItems && session.selectedItems.length > 0) {
+      const parsed = parseOrder(session.selectedItems.map((i) => `${i.name} ${i.qty}`).join(", "));
+      if (parsed) {
+        await saveOrder({
+          customer: resolvedName,
+          items: parsed.items,
+          total: parsed.total,
+          status: "PENDING",
+        });
+
+        await trackAnalytics({ isOrder: true, revenue: parsed.total });
+        const invoice = generateInvoice(resolvedName, parsed.items, parsed.total);
+        await sendDM(senderId, invoice);
+        return;
+      }
+    }
+  }
+
+  if (session.waitingForPayment && normalizedText.includes("transfer")) {
+    await sendDM(senderId, "Baik kak, pembayaran sedang kami cek 🙏");
+    return;
+  }
 
   const parsed = parseOrder(text);
-  const isOrder = parsed !== null;
+  const isOrder = shouldCreateInvoice(text, parsed !== null) && !session.waitingForName;
 
   await trackAnalytics({ isOrder, revenue: parsed?.total ?? 0 });
 
   if (isOrder) {
-    await saveOrder({
-      customer: customerName,
-      items: parsed!.items,
-      total: parsed!.total,
-      status: "PENDING",
-    });
+    session.selectedItems = parsed!.items.map((item) => ({ name: item.item, qty: item.qty }));
+    session.waitingForName = true;
+    session.waitingForPayment = false;
+    checkoutSessions.set(senderId, session);
 
-    const invoice = generateInvoice(customerName, parsed!.items, parsed!.total);
-    await sendDM(senderId, invoice);
+    await sendDM(
+      senderId,
+      `Baik Kak 😊 Pesanan ${parsed!.items
+        .map((item) => `${item.item} ${item.qty}`)
+        .join(", ")} ya kak. Atas nama siapa pesanannya kak?`
+    );
   } else {
-    const reply = await askAI(text);
+    if (
+      ["mau pesan", "saya mau pesan", "jadi pesan", "jadi order", "mau order"].some((phrase) =>
+        normalizedText.includes(phrase)
+      )
+    ) {
+      await sendDM(senderId, "Baik Kak 😊 Mau pesan menu apa dan berapa jumlahnya ya kak?");
+      return;
+    }
+
+    const reply = await askAI(senderId, text);
     await sendDM(senderId, reply);
   }
 }
-
 export async function POST(req: Request) {
   const body = await req.json();
-  console.log("WEBHOOK MASUK:", JSON.stringify(body, null, 2));
+  console.log("[webhook] incoming:", JSON.stringify(body, null, 2));
 
   const tasks: Promise<void>[] = [];
 
@@ -143,6 +196,7 @@ export async function POST(req: Request) {
     // 1. Tangani DMs & Postback (messaging) - Instagram Direct & Messenger
     for (const messageEvent of entry?.messaging ?? []) {
       const senderId = messageEvent?.sender?.id;
+      console.log("[webhook] messaging.sender.id:", senderId);
       if (!senderId) continue;
 
       // Skip echo messages (pesan dari bot kita sendiri)
@@ -187,7 +241,9 @@ export async function POST(req: Request) {
       if (value?.is_self) continue;
 
       if (change.field === "comments") {
-        const senderId: string = value?.from?.id;
+        const senderId = value?.sender?.id ?? value?.from?.id;
+        if (!senderId) continue;
+        console.log("[webhook] comments sender id:", senderId);
         const commentId: string = value?.id;
         const text: string = value?.text;
         if (!senderId || !commentId || !text) continue;
