@@ -10,6 +10,29 @@ type Message = {
   content: string;
 };
 
+function isGreeting(text: string) {
+  const greetings = [
+    "halo",
+    "hai",
+    "hi",
+    "p",
+    "permisi",
+    "assalamualaikum",
+    "selamat pagi",
+    "selamat siang",
+    "selamat malam",
+  ];
+
+  return greetings.includes(text.toLowerCase().trim());
+}
+
+function hasAskedFirstVisit(history: Message[]) {
+  return history.some(
+    (msg) =>
+      msg.role === "assistant" && msg.content.toLowerCase().includes("sudah pernah ke umayumcha")
+  );
+}
+
 /**
  * Memory sederhana in-memory
  * key = senderId instagram
@@ -35,6 +58,8 @@ ATURAN:
 5. Jika customer sudah menjawab jumlah orang, jangan tanyakan lagi.
 6. Jika customer sudah pernah disapa, jangan ulang pembukaan panjang.
 7. Fokus menjawab pertanyaan terakhir customer.
+8. Jika customer belum pernah datang, jelaskan singkat Paket Sewa dan Paket Makan.
+9. Jika customer sudah menjawab apakah pernah datang atau belum, jangan tanyakan lagi.
 
 INFORMASI UMAYUMCHA
 
@@ -71,6 +96,9 @@ export async function askAI(senderId: string, message: string): Promise<string> 
    * Ambil memory user
    */
   const history = memoryStore.get(senderId) || [];
+  const previousUserMessage =
+    history.filter((m) => m.role === "user").slice(-1)[0]?.content.toLowerCase().trim() || "";
+  const normalizedMessage = message.toLowerCase().trim();
 
   /**
    * Simpan pesan user
@@ -85,8 +113,40 @@ export async function askAI(senderId: string, message: string): Promise<string> 
    * hanya simpan 10 chat terakhir
    */
   const limitedHistory = history.slice(-10);
+  const userHasAnsweredVisit = limitedHistory.some(
+    (m) =>
+      m.role === "user" && ["sudah", "belum", "udah", "pernah"].some((v) => m.content.toLowerCase().includes(v))
+  );
   const lastAssistantMessage =
     limitedHistory.filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
+  const lastUserMessage =
+    limitedHistory.filter((m) => m.role === "user").slice(-2)[0]?.content.toLowerCase().trim() || "";
+
+  if (isGreeting(normalizedMessage) && !hasAskedFirstVisit(limitedHistory)) {
+    const welcome = "Halo Kak 😊 Sebelumnya Kakak sudah pernah ke Umayumcha belum kak?";
+
+    limitedHistory.push({
+      role: "assistant",
+      content: welcome,
+    });
+
+    memoryStore.set(senderId, limitedHistory);
+    return welcome;
+  }
+
+  if (normalizedMessage === previousUserMessage || (isGreeting(normalizedMessage) && isGreeting(lastUserMessage))) {
+    const duplicateReply = userHasAnsweredVisit
+      ? "Hehe iya Kak 😊 Ada yang ingin ditanyakan terkait paket atau menu kami kak?"
+      : "Hehe iya Kak 😊 Sebelumnya Kakak sudah pernah ke Umayumcha belum kak?";
+
+    limitedHistory.push({
+      role: "assistant",
+      content: duplicateReply,
+    });
+
+    memoryStore.set(senderId, limitedHistory);
+    return duplicateReply;
+  }
 
   /**
    * Generate AI
