@@ -5,15 +5,45 @@ import { trackAnalytics } from "@/lib/analytics";
 import { parseOrder } from "@/lib/parser";
 import { sendDM } from "@/lib/instagram";
 
-async function sendDMIfPossible(senderId: string | undefined, text: string): Promise<void> {
-  if (!senderId) {
+function isValidInstagramRecipientId(senderId: string): boolean {
+  return /^\d+$/.test(senderId);
+}
+
+function normalizeSenderId(senderId: unknown): string | null {
+  if (typeof senderId !== "string") {
+    return null;
+  }
+
+  const sanitizedSenderId = senderId.trim();
+  if (!sanitizedSenderId) {
+    return null;
+  }
+
+  if (!isValidInstagramRecipientId(sanitizedSenderId)) {
+    return null;
+  }
+
+  return sanitizedSenderId;
+}
+
+async function sendDMIfPossible(senderId: unknown, text: string): Promise<void> {
+  const normalizedSenderId = normalizeSenderId(senderId);
+  console.log("[orders] senderId:", senderId);
+  console.log("[orders] SENDER ID:", senderId);
+  console.log("[orders] TYPE:", typeof senderId);
+
+  if (!normalizedSenderId) {
+    if (senderId) {
+      console.warn(`[orders] Skip Instagram DM because senderId is invalid: ${String(senderId)}`);
+    }
     return;
   }
 
   try {
-    await sendDM(senderId, text);
+    console.log("[orders] before sendDM");
+    await sendDM(normalizedSenderId, text);
   } catch (error) {
-    console.error("[orders] Failed to send Instagram DM:", error);
+    console.warn("[orders] Failed to send Instagram DM:", error);
   }
 }
 

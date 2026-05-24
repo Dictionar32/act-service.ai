@@ -3,6 +3,7 @@ const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
+  console.log("[instagram] function called");
   console.log("[instagram] recipientId:", recipientId);
   const messagingTarget = IG_USER_ID?.trim() ? IG_USER_ID.trim() : "me";
   console.log("[instagram] target:", messagingTarget);
