@@ -70,6 +70,7 @@ async function handleComment(senderId: string, commentId: string, text: string) 
   } else {
     // Pertanyaan biasa — reply publik via AI (singkat)
     const reply = await askAI(
+      senderId,
       `Balas komentar Instagram ini dengan singkat (1 kalimat), ramah, bahasa Indonesia:\n"${text}"`
     );
     await replyComment(commentId, reply);
@@ -103,7 +104,7 @@ async function handlePostback(senderId: string, title: string, payload: string) 
     return;
   }
 
-  const reply = await askAI(`User menekan tombol: ${title}`);
+  const reply = await askAI(senderId, `User menekan tombol: ${title}`);
   await sendDM(senderId, reply);
 }
 
@@ -128,14 +129,14 @@ async function handleMessage(senderId: string, text: string) {
     const invoice = generateInvoice(customerName, parsed!.items, parsed!.total);
     await sendDM(senderId, invoice);
   } else {
-    const reply = await askAI(text);
+    const reply = await askAI(senderId, text);
     await sendDM(senderId, reply);
   }
 }
 
 export async function POST(req: Request) {
   const body = await req.json();
-  console.log("WEBHOOK MASUK:", JSON.stringify(body, null, 2));
+  console.log("[webhook] incoming:", JSON.stringify(body, null, 2));
 
   const tasks: Promise<void>[] = [];
 
@@ -143,6 +144,7 @@ export async function POST(req: Request) {
     // 1. Tangani DMs & Postback (messaging) - Instagram Direct & Messenger
     for (const messageEvent of entry?.messaging ?? []) {
       const senderId = messageEvent?.sender?.id;
+      console.log("[webhook] messaging.sender.id:", senderId);
       if (!senderId) continue;
 
       // Skip echo messages (pesan dari bot kita sendiri)
@@ -187,7 +189,9 @@ export async function POST(req: Request) {
       if (value?.is_self) continue;
 
       if (change.field === "comments") {
-        const senderId: string = value?.from?.id;
+        const senderId = value?.sender?.id ?? value?.from?.id;
+        if (!senderId) continue;
+        console.log("[webhook] comments sender id:", senderId);
         const commentId: string = value?.id;
         const text: string = value?.text;
         if (!senderId || !commentId || !text) continue;
