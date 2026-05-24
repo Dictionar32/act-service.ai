@@ -188,7 +188,7 @@ export async function POST(req: Request) {
       if (value?.is_self) continue;
 
       if (change.field === "comments") {
-        const senderId: string = value?.sender?.id ?? value?.from?.id;
+        const senderId = value?.sender?.id ?? value?.from?.id ?? "";
         console.log("[webhook] comments sender id:", senderId);
         const commentId: string = value?.id;
         const text: string = value?.text;

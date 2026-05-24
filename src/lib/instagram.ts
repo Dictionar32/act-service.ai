@@ -1,8 +1,16 @@
-const PAGE_TOKEN = process.env.IG_PAGE_TOKEN!;
+const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
 const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
+  if (!PAGE_TOKEN) {
+    console.error("[instagram] Missing IG_PAGE_TOKEN");
+    return {
+      skipped: true,
+      reason: "missing_token",
+    };
+  }
+
   console.log("[instagram] function called");
   console.log("[instagram] recipientId:", recipientId);
   const messagingTarget = IG_USER_ID?.trim() ? IG_USER_ID.trim() : "me";
