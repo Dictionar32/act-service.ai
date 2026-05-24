@@ -6,33 +6,20 @@ import { parseOrder } from "@/lib/parser";
 import { sendDM } from "@/lib/instagram";
 
 function isValidInstagramRecipientId(senderId: string): boolean {
-  return /^\d+$/.test(senderId);
+  return /^\d{10,30}$/.test(senderId);
 }
 
-function normalizeSenderId(senderId: unknown): string | null {
-  if (typeof senderId !== "string") {
-    return null;
-  }
-
-  const sanitizedSenderId = senderId.trim();
-  if (!sanitizedSenderId) {
-    return null;
-  }
-
-  if (!isValidInstagramRecipientId(sanitizedSenderId)) {
-    return null;
-  }
-
-  return sanitizedSenderId;
+function normalizeSenderId(senderId: unknown): string {
+  return String(senderId ?? "").trim();
 }
 
 async function sendDMIfPossible(senderId: unknown, text: string): Promise<void> {
   const normalizedSenderId = normalizeSenderId(senderId);
-  console.log("[orders] senderId:", senderId);
-  console.log("[orders] SENDER ID:", senderId);
-  console.log("[orders] TYPE:", typeof senderId);
+  console.log("[orders] raw senderId:", senderId);
+  console.log("[orders] normalized senderId:", normalizedSenderId);
+  console.log("[orders] isValid:", isValidInstagramRecipientId(normalizedSenderId));
 
-  if (!normalizedSenderId) {
+  if (!isValidInstagramRecipientId(normalizedSenderId)) {
     if (senderId) {
       console.warn(`[orders] Skip Instagram DM because senderId is invalid: ${String(senderId)}`);
     }

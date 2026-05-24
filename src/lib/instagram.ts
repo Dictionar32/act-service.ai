@@ -2,6 +2,17 @@ const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
 const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
+function createInstagramHeaders(): Record<string, string> {
+  if (!PAGE_TOKEN) {
+    throw new Error("Missing IG_PAGE_TOKEN");
+  }
+
+  return {
+    Authorization: `Bearer ${PAGE_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
   if (!PAGE_TOKEN) {
     console.error("[instagram] Missing IG_PAGE_TOKEN");
@@ -33,10 +44,7 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
   const res = await fetch(`${BASE_URL}/${messagingTarget}/messages`, {
     method: "POST",
 
-    headers: {
-      Authorization: `Bearer ${PAGE_TOKEN}`,
-      "Content-Type": "application/json",
-    },
+    headers: createInstagramHeaders(),
 
     body: JSON.stringify(payload),
   });
@@ -54,14 +62,9 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
 }
 
 export async function replyComment(commentId: string, text: string): Promise<void> {
-  if (!PAGE_TOKEN) {
-    console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip reply komentar");
-    return;
-  }
-
-  const res = await fetch(`${BASE_URL}/${commentId}/replies?access_token=${PAGE_TOKEN}`, {
+  const res = await fetch(`${BASE_URL}/${commentId}/replies`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: createInstagramHeaders(),
     body: JSON.stringify({ message: text }),
   });
 
@@ -79,7 +82,9 @@ export async function getUserProfile(userId: string): Promise<{ name: string; us
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/${userId}?fields=name,username&access_token=${PAGE_TOKEN}`);
+    const res = await fetch(`${BASE_URL}/${userId}?fields=name,username`, {
+      headers: createInstagramHeaders(),
+    });
     if (!res.ok) {
       console.warn(`[instagram] Gagal fetch profil user ${userId}: ${res.statusText}`);
       return { name: "Kak", username: "" };

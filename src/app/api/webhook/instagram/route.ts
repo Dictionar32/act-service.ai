@@ -135,6 +135,7 @@ async function handleMessage(senderId: string, text: string) {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  console.log("[webhook] body:", JSON.stringify(body, null, 2));
   console.log("WEBHOOK MASUK:", JSON.stringify(body, null, 2));
 
   const tasks: Promise<void>[] = [];
