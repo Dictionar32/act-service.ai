@@ -5,42 +5,178 @@ const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const SYSTEM_PROMPT = `Kamu adalah customer service Umayumcha.
-Jawab dengan ramah dan singkat dalam bahasa Indonesia (maksimal 3 kalimat).
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
 
-ATURAN KHUSUS BAHASA & GAYA BICARA (WAJIB DIIKUTI):
-1. Setiap respon atau jawaban HARUS DIAWALI dengan kalimat sopan santun dan kata "Kak" atau "Kakak" (contoh: "Selamat siang Kak...", "Halo Kak, permisi...", "Selamat datang Kak...").
-2. Setiap respon atau jawaban HARUS DIAKHIRI dengan kata "kak" (contoh: "... di sini kak?", "... untuk kakak kak.", "... ya kak.").
-3. Di awal percakapan, tanyakan apakah customer sudah pernah ke sini sebelumnya dengan ramah.
+function isGreeting(text: string) {
+  const greetings = [
+    "halo",
+    "hai",
+    "hi",
+    "p",
+    "permisi",
+    "assalamualaikum",
+    "selamat pagi",
+    "selamat siang",
+    "selamat malam",
+  ];
 
-SISTEM LAYANAN & PAKET UMAYUMCHA:
-- Ada 2 jenis paket yang tersedia:
-  1. Paket Sewa: Diperbolehkan membawa makanan dari luar.
-  2. Paket Makan: Harus membeli makanan/minuman dari menu kita.
-- Rekomendasi paket berdasarkan jumlah orang:
-  - Jika customer sendirian (single): Rekomendasikan "Paket Single" dengan minimal pembelian Rp 17.000 untuk satu orang.
-  - Jika customer bersama teman (2-3 orang): Rekomendasikan "Paket Group".
-
-Menu dan harga (untuk Paket Makan):
-- Thai Tea: Rp 15.000
-- Dimsum: Rp 18.000
-- Brown Sugar Boba: Rp 25.000
-- Taro Milk Tea: Rp 23.000
-- Matcha Latte: Rp 24.005
-- Mango Yakult: Rp 22.000
-
-Contoh kalimat pembuka jika customer belum pernah berkunjung:
-"Selamat siang Kak, sebelumnya Kakak sudah pernah ke sini? Jika belum, kami menawarkan paket sewa (boleh bawa makan dari luar) dan paket makan (beli makanan di sini). Karena Kakak single, kami merekomendasikan Paket Single dengan minimal pembelian Rp 17.000 per orang ya kak."`;
-
-export async function askAI(message: string): Promise<string> {
-  const { text } = await generateText({
-    model: groq("llama-3.3-70b-versatile"),
-    system: SYSTEM_PROMPT,
-    prompt: message,
-  });
-  return text;
+  return greetings.includes(text.toLowerCase().trim());
 }
 
-askAI("aku pesan thai tea").then((res) => {
-  console.log("AI jawab:", res);
-});
+function hasAskedFirstVisit(history: Message[]) {
+  return history.some(
+    (msg) =>
+      msg.role === "assistant" && msg.content.toLowerCase().includes("sudah pernah ke umayumcha")
+  );
+}
+
+/**
+ * Memory sederhana in-memory
+ * key = senderId instagram
+ */
+const memoryStore = new Map<string, Message[]>();
+
+const SYSTEM_PROMPT = `
+Kamu adalah customer service Umayumcha.
+
+Gaya bicara:
+- Ramah
+- Natural seperti admin Instagram asli
+- Santai tapi sopan
+- Maksimal 2 kalimat
+- Jangan terlalu panjang
+- Jangan mengulang salam atau perkenalan terus menerus
+
+ATURAN:
+1. Selalu gunakan kata "Kak" atau "Kakak".
+2. Akhiri jawaban dengan "kak".
+3. Jangan mengulang pertanyaan yang sudah pernah ditanyakan.
+4. Gunakan konteks chat sebelumnya.
+5. Jika customer sudah menjawab jumlah orang, jangan tanyakan lagi.
+6. Jika customer sudah pernah disapa, jangan ulang pembukaan panjang.
+7. Fokus menjawab pertanyaan terakhir customer.
+8. Jika customer belum pernah datang, jelaskan singkat Paket Sewa dan Paket Makan.
+9. Jika customer sudah menjawab apakah pernah datang atau belum, jangan tanyakan lagi.
+
+INFORMASI UMAYUMCHA
+
+PAKET:
+- Paket Sewa → boleh bawa makanan dari luar
+- Paket Makan → harus order menu dari Umayumcha
+
+REKOMENDASI:
+- Sendiri → Paket Single minimal Rp17.000
+- 2-3 orang → Paket Group
+
+MENU:
+- Thai Tea Rp15.000
+- Dimsum Rp18.000
+- Brown Sugar Boba Rp25.000
+- Taro Milk Tea Rp23.000
+- Matcha Latte Rp24.000
+- Mango Yakult Rp22.000
+
+CONTOH YANG BENAR:
+
+User: saya sendiri
+AI: Baik Kak, kalau sendiri kami rekomendasikan Paket Single dengan minimal order Rp17.000 ya kak.
+
+User: ada apa saja?
+AI: Ada Paket Sewa dan Paket Makan kak. Kalau Paket Sewa boleh bawa makanan dari luar, sedangkan Paket Makan order dari menu kami ya kak.
+
+User: menu apa saja?
+AI: Menu kami ada Thai Tea, Dimsum, Brown Sugar Boba, Taro Milk Tea, Matcha Latte, dan Mango Yakult ya kak.
+`;
+
+export async function askAI(senderId: string, message: string): Promise<string> {
+  /**
+   * Ambil memory user
+   */
+  const history = memoryStore.get(senderId) || [];
+  const previousUserMessage =
+    history.filter((m) => m.role === "user").slice(-1)[0]?.content.toLowerCase().trim() || "";
+  const normalizedMessage = message.toLowerCase().trim();
+
+  /**
+   * Simpan pesan user
+   */
+  history.push({
+    role: "user",
+    content: message,
+  });
+
+  /**
+   * Batasi memory
+   * hanya simpan 10 chat terakhir
+   */
+  const limitedHistory = history.slice(-10);
+  const userHasAnsweredVisit = limitedHistory.some(
+    (m) =>
+      m.role === "user" && ["sudah", "belum", "udah", "pernah"].some((v) => m.content.toLowerCase().includes(v))
+  );
+  const lastAssistantMessage =
+    limitedHistory.filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
+  const lastUserMessage =
+    limitedHistory.filter((m) => m.role === "user").slice(-2)[0]?.content.toLowerCase().trim() || "";
+
+  if (isGreeting(normalizedMessage) && !hasAskedFirstVisit(limitedHistory)) {
+    const welcome = "Halo Kak 😊 Sebelumnya Kakak sudah pernah ke Umayumcha belum kak?";
+
+    limitedHistory.push({
+      role: "assistant",
+      content: welcome,
+    });
+
+    memoryStore.set(senderId, limitedHistory);
+    return welcome;
+  }
+
+  if (normalizedMessage === previousUserMessage || (isGreeting(normalizedMessage) && isGreeting(lastUserMessage))) {
+    const duplicateReply = userHasAnsweredVisit
+      ? "Hehe iya Kak 😊 Ada yang ingin ditanyakan terkait paket atau menu kami kak?"
+      : "Hehe iya Kak 😊 Sebelumnya Kakak sudah pernah ke Umayumcha belum kak?";
+
+    limitedHistory.push({
+      role: "assistant",
+      content: duplicateReply,
+    });
+
+    memoryStore.set(senderId, limitedHistory);
+    return duplicateReply;
+  }
+
+  /**
+   * Generate AI
+   */
+  const { text } = await generateText({
+    model: groq("llama-3.3-70b-versatile"),
+    system: `${SYSTEM_PROMPT}
+
+Jangan mengulangi jawaban ini lagi:
+"${lastAssistantMessage}"
+`,
+    messages: limitedHistory.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    })),
+    temperature: 0.7,
+  });
+
+  /**
+   * Simpan jawaban AI
+   */
+  limitedHistory.push({
+    role: "assistant",
+    content: text,
+  });
+
+  /**
+   * Update memory
+   */
+  memoryStore.set(senderId, limitedHistory);
+
+  return text.trim();
+}
