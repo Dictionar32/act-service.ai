@@ -1,38 +1,47 @@
 const PAGE_TOKEN = process.env.IG_PAGE_TOKEN!;
+const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
-  if (!PAGE_TOKEN) {
-    console.warn("[instagram] IG_PAGE_TOKEN belum diset, skip kirim DM");
-    console.log("[instagram] Pesan yang harusnya terkirim:", text);
-    return;
-  }
+  console.log("[instagram] recipientId:", recipientId);
+  const messagingTarget = IG_USER_ID?.trim() ? IG_USER_ID.trim() : "me";
+  console.log("[instagram] target:", messagingTarget);
 
   const payload = {
     messaging_product: "instagram",
-    recipient: { id: recipientId },
-    message: { text },
+
+    recipient: {
+      id: recipientId,
+    },
+
+    message: {
+      text,
+    },
   };
 
-  console.log("[instagram] recipient:", recipientId);
   console.log("[instagram] payload:", JSON.stringify(payload, null, 2));
 
-  const res = await fetch(`${BASE_URL}/me/messages`, {
+  const res = await fetch(`${BASE_URL}/${messagingTarget}/messages`, {
     method: "POST",
+
     headers: {
       Authorization: `Bearer ${PAGE_TOKEN}`,
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(payload),
   });
 
-  const data = await res.json();
-  console.log("[instagram] response:", JSON.stringify(data, null, 2));
+  const raw = await res.text();
+
+  console.log("[instagram] STATUS:", res.status);
+  console.log("[instagram] RAW RESPONSE:", raw);
+
   if (!res.ok) {
-    throw new Error(JSON.stringify(data));
+    throw new Error(raw);
   }
 
-  return data;
+  return JSON.parse(raw);
 }
 
 export async function replyComment(commentId: string, text: string): Promise<void> {
