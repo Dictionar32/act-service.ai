@@ -1,4 +1,4 @@
-const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
+const PAGE_TOKEN = process.env.IG_PAGE_TOKEN!;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
