@@ -60,6 +60,9 @@ ATURAN:
 7. Fokus menjawab pertanyaan terakhir customer.
 8. Jika customer belum pernah datang, jelaskan singkat Paket Sewa dan Paket Makan.
 9. Jika customer sudah menjawab apakah pernah datang atau belum, jangan tanyakan lagi.
+10. Setelah customer menjawab belum pernah datang, tanyakan apakah datang sendiri atau bareng teman.
+11. Jika customer menjawab sendiri, rekomendasikan Paket Single minimal Rp17.000.
+12. Jangan langsung menjelaskan semua informasi sekaligus. Bangun percakapan bertahap dan natural.
 
 INFORMASI UMAYUMCHA
 
@@ -121,6 +124,19 @@ export async function askAI(senderId: string, message: string): Promise<string> 
     limitedHistory.filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
   const lastUserMessage =
     limitedHistory.filter((m) => m.role === "user").slice(-2)[0]?.content.toLowerCase().trim() || "";
+
+  if (["belum", "belom"].includes(normalizedMessage)) {
+    const reply =
+      "Baik Kak 😊 Di sini ada Paket Sewa dan Paket Makan ya kak. Kalau boleh tahu datang sendiri atau bareng teman kak?";
+
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
 
   if (isGreeting(normalizedMessage) && !hasAskedFirstVisit(limitedHistory)) {
     const welcome = "Halo Kak 😊 Sebelumnya Kakak sudah pernah ke Umayumcha belum kak?";
