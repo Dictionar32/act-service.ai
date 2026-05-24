@@ -2,9 +2,10 @@ const PAGE_TOKEN = process.env.IG_PAGE_TOKEN;
 const IG_USER_ID = process.env.IG_USER_ID;
 const BASE_URL = "https://graph.facebook.com/v25.0";
 
-function createInstagramHeaders(): Record<string, string> {
+function createInstagramHeaders(): Record<string, string> | null {
   if (!PAGE_TOKEN) {
-    throw new Error("Missing IG_PAGE_TOKEN");
+    console.warn("[instagram] missing IG_PAGE_TOKEN");
+    return null;
   }
 
   return {
@@ -14,18 +15,25 @@ function createInstagramHeaders(): Record<string, string> {
 }
 
 export async function sendDM(recipientId: string, text: string): Promise<unknown> {
-  if (!PAGE_TOKEN) {
-    console.error("[instagram] Missing IG_PAGE_TOKEN");
+  const headers = createInstagramHeaders();
+  if (!headers) {
     return {
       skipped: true,
       reason: "missing_token",
     };
   }
+  const instagramUserId = IG_USER_ID?.trim();
+  if (!instagramUserId) {
+    console.warn("[instagram] missing IG_USER_ID");
+    return {
+      skipped: true,
+      reason: "missing_ig_user_id",
+    };
+  }
 
-  console.log("[instagram] function called");
-  console.log("[instagram] recipientId:", recipientId);
-  const messagingTarget = IG_USER_ID?.trim() ? IG_USER_ID.trim() : "me";
-  console.log("[instagram] target:", messagingTarget);
+  console.log("[DM] recipient:", recipientId);
+  console.log("[DM] ig user:", instagramUserId);
+  console.log("[DM] token exists:", !!PAGE_TOKEN);
 
   const payload = {
     messaging_product: "instagram",
@@ -41,10 +49,10 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
 
   console.log("[instagram] payload:", JSON.stringify(payload, null, 2));
 
-  const res = await fetch(`${BASE_URL}/${messagingTarget}/messages`, {
+  const res = await fetch(`${BASE_URL}/${instagramUserId}/messages`, {
     method: "POST",
 
-    headers: createInstagramHeaders(),
+    headers,
 
     body: JSON.stringify(payload),
   });
@@ -62,9 +70,15 @@ export async function sendDM(recipientId: string, text: string): Promise<unknown
 }
 
 export async function replyComment(commentId: string, text: string): Promise<void> {
+  const headers = createInstagramHeaders();
+  if (!headers) {
+    console.warn("[instagram] skip comment reply");
+    return;
+  }
+
   const res = await fetch(`${BASE_URL}/${commentId}/replies`, {
     method: "POST",
-    headers: createInstagramHeaders(),
+    headers,
     body: JSON.stringify({ message: text }),
   });
 
@@ -77,13 +91,14 @@ export async function replyComment(commentId: string, text: string): Promise<voi
 }
 
 export async function getUserProfile(userId: string): Promise<{ name: string; username: string }> {
-  if (!PAGE_TOKEN) {
-    return { name: "Kak", username: "" };
-  }
-
   try {
+    const headers = createInstagramHeaders();
+    if (!headers) {
+      return { name: "Kak", username: "" };
+    }
+
     const res = await fetch(`${BASE_URL}/${userId}?fields=name,username`, {
-      headers: createInstagramHeaders(),
+      headers,
     });
     if (!res.ok) {
       console.warn(`[instagram] Gagal fetch profil user ${userId}: ${res.statusText}`);

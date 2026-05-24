@@ -135,8 +135,7 @@ async function handleMessage(senderId: string, text: string) {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  console.log("[webhook] body:", JSON.stringify(body, null, 2));
-  console.log("WEBHOOK MASUK:", JSON.stringify(body, null, 2));
+  console.log("[webhook] incoming:", JSON.stringify(body, null, 2));
 
   const tasks: Promise<void>[] = [];
 
@@ -189,7 +188,8 @@ export async function POST(req: Request) {
       if (value?.is_self) continue;
 
       if (change.field === "comments") {
-        const senderId = value?.sender?.id ?? value?.from?.id ?? "";
+        const senderId = value?.sender?.id ?? value?.from?.id;
+        if (!senderId) continue;
         console.log("[webhook] comments sender id:", senderId);
         const commentId: string = value?.id;
         const text: string = value?.text;
