@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 
-import { getMenuLookup } from "@/lib/menu";
+import { buildMenuQuickReply, getMenuLookup, hasMenuQuestion } from "@/lib/menu";
 
 const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
@@ -167,6 +167,16 @@ export async function askAI(senderId: string, message: string): Promise<string> 
 
   if (hasOrderPhrase(normalizedMessage) && !normalizedMessage.includes("atas nama")) {
     const reply = "Baik Kak 😊 Mau pesan menu apa dan berapa jumlahnya ya kak?";
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
+
+  if (hasMenuQuestion(normalizedMessage)) {
+    const reply = buildMenuQuickReply();
     limitedHistory.push({
       role: "assistant",
       content: reply,

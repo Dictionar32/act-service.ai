@@ -65,6 +65,12 @@ export function buildInstagramMenuText(): string {
   return lines.join("\n").trim();
 }
 
+
+export function buildMenuQuickReply(): string {
+  const minuman = MENU.minuman.slice(0, 6).map((item) => item.name).join(", ");
+  return `Ada ${minuman} dan menu lainnya ya kak. Kalau mau, aku kirim daftar lengkapnya juga kak.`;
+}
+
 export function hasMenuQuestion(text: string): boolean {
   const normalized = text.toLowerCase();
   const menuPatterns = [
