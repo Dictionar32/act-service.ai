@@ -1,4 +1,6 @@
-export const MENU = {
+import type { MenuData } from "@/types/menu";
+
+export const MENU: MenuData = {
   makanan: [
     {
       name: "Mie Goreng",
@@ -430,4 +432,24 @@ export const MENU = {
     price: 8000,
   },
 ],
+
+  packages: [
+    {
+      category: "Paket Makan",
+      items: [
+        { name: "Paket Couple", price: 0, description: "Ajak 1 temen kamu beli makanan atau minuman min 15k, kalian gratis biaya sewa! ☕️🍽️" },
+        { name: "Paket Group", price: 0, description: "Ajak min 2 temen kamu beli makanan atau minuman min 13k, kalian gratis biaya sewa 👥" },
+        { name: "Paket Single", price: 0, description: "Beli makanan atau minuman minimal 17k, gratis biaya sewa! ☕️" }
+      ]
+    },
+    {
+      category: "Paket Sewa",
+      items: [
+        { name: "Paket Short Time", price: 8000, description: "Pas banget buat kamu yang butuh spot kerja singkat 2 JAM tapi fokus 🧑‍💻" },
+        { name: "Paket Pelajar", price: 8000, description: "Pas banget buat kamu yang butuh spot kerja seharian tapi low budget 🧑‍🎓" },
+        { name: "Paket Harian", price: 14000, description: "Kerja sepuasnya seharian penuh, harga tetap ramah di kantong ✨💸" }
+      ]
+    }
+  ],
+
 };

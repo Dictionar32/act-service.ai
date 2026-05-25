@@ -1,6 +1,8 @@
 import { generateText } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 
+import { buildMenuQuickReply, getMenuLookup, hasMenuQuestion } from "@/lib/menu";
+
 const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
 });
@@ -79,12 +81,7 @@ REKOMENDASI:
 - 2-3 orang → Paket Group
 
 MENU:
-- Thai Tea Rp15.000
-- Dimsum Rp18.000
-- Brown Sugar Boba Rp25.000
-- Taro Milk Tea Rp23.000
-- Matcha Latte Rp24.000
-- Mango Yakult Rp22.000
+- Gunakan menu terbaru dari data sistem, jangan pakai daftar hardcoded lama.
 
 CONTOH YANG BENAR:
 
@@ -95,7 +92,7 @@ User: ada apa saja?
 AI: Ada Paket Sewa dan Paket Makan kak. Kalau Paket Sewa boleh bawa makanan dari luar, sedangkan Paket Makan order dari menu kami ya kak.
 
 User: menu apa saja?
-AI: Menu kami ada Thai Tea, Dimsum, Brown Sugar Boba, Taro Milk Tea, Matcha Latte, dan Mango Yakult ya kak.
+AI: Menu kami mengikuti data terbaru kami ya kak.
 `;
 
 export async function askAI(senderId: string, message: string): Promise<string> {
@@ -178,8 +175,21 @@ export async function askAI(senderId: string, message: string): Promise<string> 
     return reply;
   }
 
-  const menuWithQtyPattern =
-    /(thai tea|dimsum|brown sugar boba|taro milk tea|matcha latte|mango yakult)\s*\d+/i;
+  if (hasMenuQuestion(normalizedMessage)) {
+    const reply = buildMenuQuickReply();
+    limitedHistory.push({
+      role: "assistant",
+      content: reply,
+    });
+    memoryStore.set(senderId, limitedHistory);
+    return reply;
+  }
+
+  const menuNamesPattern = Object.keys(getMenuLookup())
+    .sort((a, b) => b.length - a.length)
+    .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const menuWithQtyPattern = new RegExp(`(${menuNamesPattern})\\s*\\d+`, "i");
   if (menuWithQtyPattern.test(normalizedMessage)) {
     const match = normalizedMessage.match(menuWithQtyPattern);
     const normalizedOrder = match ? match[0].replace(/\s+/g, " ").trim() : "pesanan Kak";
