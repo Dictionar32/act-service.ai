@@ -1,11 +1,6 @@
-const MENU: Record<string, number> = {
-  "thai tea": 15000,
-  dimsum: 18000,
-  "brown sugar boba": 25000,
-  "taro milk tea": 23000,
-  "matcha latte": 24000,
-  "mango yakult": 22000,
-};
+import { getMenuLookup } from "@/lib/menu";
+
+const MENU: Record<string, number> = getMenuLookup();
 
 export interface OrderItem {
   item: string;
