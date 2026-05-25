@@ -4,6 +4,7 @@ import { parseOrder, shouldCreateInvoice } from "@/lib/parser";
 import { saveOrder, saveCustomer } from "@/lib/sheets";
 import { generateInvoice } from "@/lib/invoice";
 import { trackAnalytics } from "@/lib/analytics";
+import { buildInstagramMenuText, hasMenuQuestion } from "@/lib/menu";
 
 const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
 
@@ -55,6 +56,19 @@ async function handleComment(senderId: string, commentId: string, text: string) 
   // Registrasi customer baru dan dapatkan namanya
   const profile = await registerCustomerIfNeeded(senderId);
   const customerName = profile.name || "Kak";
+  const normalizedText = text.toLowerCase().trim();
+
+  if (hasMenuQuestion(normalizedText)) {
+    await sendDM(
+      senderId,
+      `Siap Kak, ini daftar menu terbaru kami ya 😊
+
+${buildInstagramMenuText()}
+
+Kalau sudah pilih, langsung tulis nama menu + jumlahnya ya kak.`
+    );
+    return;
+  }
 
   const parsed = parseOrder(text);
 
@@ -95,7 +109,7 @@ async function handleReferral(senderId: string, ref: string, source: string) {
 
   await sendDM(
     senderId,
-    `Halo Kak, selamat datang di Umayumcha! 🧋\n\nKami siap melayani pesanan kamu. Berikut menu kami:\n\n🧋 Thai Tea — Rp 15.000\n🥟 Dimsum — Rp 18.000\n🧋 Brown Sugar Boba — Rp 25.000\n🧋 Taro Milk Tea — Rp 23.000\n🍵 Matcha Latte — Rp 24.000\n🥭 Mango Yakult — Rp 22.000\n\nMau pesan apa, Kak? 😊`
+    `Halo Kak, selamat datang di Umayumcha! 🧋\n\nKami siap melayani pesanan kamu. Berikut menu kami:\n\n${buildInstagramMenuText()}\n\nMau pesan apa, Kak? 😊`
   );
 }
 
