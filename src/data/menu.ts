@@ -1,0 +1,433 @@
+export const MENU = {
+  makanan: [
+    {
+      name: "Mie Goreng",
+
+      variants: [
+        {
+          name: "Normal",
+          price: 10000,
+        },
+
+        {
+          name: "Double",
+          price: 16000,
+        },
+      ],
+
+      extras: [
+        {
+          name: "Tambah Telur",
+          price: 4000,
+        },
+
+        {
+          name: "Tambah Sayur",
+          price: 2000,
+        },
+      ],
+    },
+
+    {
+      name: "Mie Rebus",
+
+      variants: [
+        {
+          name: "Normal",
+          price: 10000,
+        },
+
+        {
+          name: "Double",
+          price: 16000,
+        },
+      ],
+
+      extras: [
+        {
+          name: "Tambah Telur",
+          price: 4000,
+        },
+
+        {
+          name: "Tambah Sayur",
+          price: 2000,
+        },
+      ],
+    },
+
+    {
+      name: "Nasi Telur",
+
+      price: 10000,
+
+      description:
+        "Nasi telur ditambah kecap dan saus",
+    },
+
+    {
+      name: "Nasi Goreng",
+
+      variants: [
+        {
+          name: "Normal",
+          price: 14000,
+        },
+
+        {
+          name: "Sosis",
+          price: 16000,
+        },
+      ],
+
+      extras: [
+        {
+          name: "Extra Telur",
+          price: 4000,
+        },
+      ],
+
+      description:
+        "Nasi digoreng ditambah telur orak-arik",
+    },
+
+    {
+      name: "Nasi Gila",
+
+      price: 20000,
+
+      ingredients: [
+        "Bakso Ikan",
+        "Bakso Udang",
+        "Sosis",
+        "Sawi",
+        "Selada",
+        "Cabe Rawit",
+      ],
+    },
+
+    {
+      name: "Chicken Katsu",
+
+      variants: [
+        {
+          name: "Small",
+          price: 15000,
+        },
+
+        {
+          name: "Large",
+          price: 20000,
+        },
+      ],
+
+      ingredients: [
+        "Nasi",
+        "Kol",
+        "Wortel",
+        "Selada",
+        "Saus",
+      ],
+    },
+
+    {
+      name: "Seblak Ori",
+
+      price: 12000,
+
+      ingredients: [
+        "Kerupuk",
+        "Telur",
+        "Mie",
+        "Bakso Ikan",
+        "Cuanki",
+        "Sosis",
+        "Sayur",
+      ],
+    },
+
+    {
+      name: "Seblak Campur",
+
+      price: 18000,
+
+      ingredients: [
+        "Kerupuk",
+        "Telur",
+        "Mie",
+        "Bakso Ikan",
+        "Cuanki",
+        "Sosis",
+        "Sayur",
+      ],
+    },
+
+    {
+      name: "Seblak Sosis",
+
+      price: 15000,
+
+      ingredients: [
+        "Kerupuk",
+        "Telur",
+        "Mie",
+        "Sayur",
+        "Sosis",
+      ],
+    },
+
+    {
+      name: "Seblak Bakso Ikan",
+
+      price: 15000,
+
+      ingredients: [
+        "Kerupuk",
+        "Telur",
+        "Mie",
+        "Sayur",
+        "Bakso Ikan",
+      ],
+    },
+  ],
+
+
+  minuman: [
+    {
+      name: "Mineral Water",
+      price: 5000,
+    },
+
+    {
+      name: "Coklat",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Matcha",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Red Velvet",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Es Teh",
+
+      variants: [
+        {
+          name: "Original",
+          price: 5000,
+        },
+
+        {
+          name: "Leci",
+          price: 8000,
+        },
+      ],
+    },
+
+    {
+      name: "Taro",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Cappucino",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Coffee Caramel",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Mochachino",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+
+    {
+      name: "Vanilla Latte",
+
+      variants: [
+        {
+          name: "Small",
+          price: 10000,
+        },
+
+        {
+          name: "Large",
+          price: 15000,
+        },
+      ],
+    },
+  ],
+
+  snack: [
+  {
+    name: "Risol",
+
+    price: 5000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Sempol",
+
+    price: 2000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Cireng",
+
+    price: 3000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Tempura",
+
+    price: 2000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Piscok",
+
+    price: 7000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Siomay Ikan",
+
+    price: 3000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Otak-Otak",
+
+    price: 3000,
+
+    unit: "pcs",
+  },
+
+  {
+    name: "Mix Platter",
+
+    price: 17000,
+  },
+
+  {
+    name: "French Fries",
+
+    price: 15000,
+  },
+
+  {
+    name: "Basreng",
+
+    price: 8000,
+  },
+
+  {
+    name: "Banana Pop",
+
+    price: 13000,
+  },
+
+  {
+    name: "Sosis",
+
+    price: 8000,
+  },
+],
+};

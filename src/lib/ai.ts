@@ -41,6 +41,3 @@ export async function askAI(message: string): Promise<string> {
   return text;
 }
 
-askAI("aku pesan thai tea").then((res) => {
-  console.log("AI jawab:", res);
-});
