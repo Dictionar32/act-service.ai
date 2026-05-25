@@ -13,8 +13,14 @@ export interface MenuItem {
   extras?: MenuOption[];
 }
 
+export interface PackageCategory {
+  category: string;
+  items: MenuItem[];
+}
+
 export interface MenuData {
   makanan: MenuItem[];
   minuman: MenuItem[];
   snack: MenuItem[];
+  packages: PackageCategory[];
 }

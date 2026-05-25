@@ -1,10 +1,5 @@
 import { MENU } from "@/data/menu";
 
-export type MenuLookupItem = {
-  name: string;
-  price: number;
-};
-
 function pickBasePrice(item: {
   price?: number;
   variants?: { price: number }[];
@@ -58,12 +53,30 @@ export function buildInstagramMenuText(): string {
     lines.push("");
   }
 
+  lines.push("📦 Paket");
+  for (const pkgCategory of MENU.packages) {
+    lines.push(`- ${pkgCategory.category}:`);
+    for (const item of pkgCategory.items) {
+      const priceText = (item.price ?? 0) === 0 ? "FREE" : `Rp ${(item.price ?? 0).toLocaleString("id-ID")}`;
+      lines.push(`  • ${item.name} — ${priceText}`);
+    }
+  }
+
   return lines.join("\n").trim();
 }
 
 export function hasMenuQuestion(text: string): boolean {
   const normalized = text.toLowerCase();
-  return ["menu", "daftar harga", "harga", "minuman apa", "makanan apa"].some((keyword) =>
-    normalized.includes(keyword)
-  );
+  const menuPatterns = [
+    /\bmenu\b/,
+    /daftar\s+menu/,
+    /daftar\s+harga/,
+    /menu\s+apa\s+saja/,
+    /minuman\s+apa/,
+    /makanan\s+apa/,
+    /harga\s+menu/,
+    /paket/,
+  ];
+
+  return menuPatterns.some((pattern) => pattern.test(normalized));
 }
