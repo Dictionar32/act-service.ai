@@ -1,4 +1,6 @@
-export const MENU = {
+import type { MenuData } from "@/types/menu";
+
+export const MENU: MenuData = {
   makanan: [
     {
       name: "Mie Goreng",
